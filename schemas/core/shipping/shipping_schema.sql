@@ -1,0 +1,38 @@
+-- Create schema if not exists
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'shipping')
+BEGIN
+    EXEC('CREATE SCHEMA shipping');
+END
+GO
+
+-- Shipping Providers
+IF OBJECT_ID('shipping.providers', 'U') IS NULL
+BEGIN
+    CREATE TABLE shipping.providers (
+        provider_id INT PRIMARY KEY IDENTITY(1,1),
+        provider_name NVARCHAR(100) NOT NULL,
+        contact_email NVARCHAR(100),
+        tracking_url_template NVARCHAR(300)
+    );
+END
+GO
+
+-- Shipments
+IF OBJECT_ID('shipping.shipments', 'U') IS NULL
+BEGIN
+    CREATE TABLE shipping.shipments (
+        shipment_id INT PRIMARY KEY IDENTITY(1,1),
+        order_id INT NOT NULL,
+        provider_id INT,
+        tracking_number NVARCHAR(100),
+        shipped_date DATETIME2,
+        estimated_delivery_date DATETIME2,
+        actual_delivery_date DATETIME2,
+        status NVARCHAR(50) CHECK (status IN ('pending', 'shipped', 'in_transit', 'delivered', 'returned')),
+        FOREIGN KEY (order_id) REFERENCES order_management.orders(order_id),
+        FOREIGN KEY (provider_id) REFERENCES shipping.providers(provider_id)
+    );
+    CREATE NONCLUSTERED INDEX IX_shipments_order_id ON shipping.shipments(order_id);
+    CREATE NONCLUSTERED INDEX IX_shipments_tracking_number ON shipping.shipments(tracking_number);
+END
+GO
